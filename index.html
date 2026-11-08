@@ -6,14 +6,14 @@
     <title>JayCoin Game</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background-color: #17212b; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; user-select: none; }
+        body { background-color: #17212b; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; user-select: none; -webkit-user-select: none; }
         h2 { font-size: 24px; margin-bottom: 5px; }
-        .score { font-size: 48px; font-weight: 800; margin: 10px 0; color: #ffd700; }
+        .score { font-size: 48px; font-weight: 800; margin: 10px 0; color: #ffd700; height: 58px; /* Фиксируем высоту, чтобы верстка не прыгала */ }
         .income { font-size: 14px; color: #aaa; margin-bottom: 15px; }
-        .coin-btn { width: 180px; height: 180px; border-radius: 50%; border: 6px solid #d4af37; background: radial-gradient(circle, #ffd700 0%, #b8860b 100%); font-size: 80px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0 auto; transition: transform 0.05s; }
+        .coin-btn { width: 180px; height: 180px; border-radius: 50%; border: 6px solid #d4af37; background: radial-gradient(circle, #ffd700 0%, #b8860b 100%); font-size: 80px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0 auto; transition: transform 0.05s; outline: none; -webkit-tap-highlight-color: transparent; }
         .coin-btn:active { transform: scale(0.92); }
         .actions { display: flex; justify-content: center; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
-        .btn { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: #2b5278; color: white; }
+        .btn { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: #2b5278; color: white; outline: none; }
         .btn:active { opacity: 0.8; }
         #status { margin-top: 20px; font-size: 13px; color: #7f91a4; min-height: 20px; }
         .leaderboard { margin-top: 30px; text-align: left; background: #232e3c; padding: 15px; border-radius: 10px; }
@@ -47,10 +47,12 @@
 
         const URL = 'https://zyarmtfnzupyzqpklajg.supabase.co/functions/v1/jaycoin-api';
         
-        let serverScore = 0;       // Баланс, подтвержденный сервером
-        let pendingClicks = 0;     // Клики, которые еще не отправлены
-        let inFlightClicks = 0;    // Клики, которые уже отправлены, но ответ еще не пришел
+        let serverScore = 0;       
+        let pendingClicks = 0;     
+        let inFlightClicks = 0;    
         let isSyncing = false;
+        let lastRenderedScore = -1; // Для плавной отрисовки
+        let animationFrameId = null;
 
         // Античит (CPS)
         const MAX_CPS = 20; 
@@ -72,34 +74,38 @@
             }
         }
 
-        function updateUI() {
-            // На экране: подтвержденный баланс + клики в очереди + клики в полете
-            document.getElementById('score').innerText = serverScore + pendingClicks + inFlightClicks;
+        // Плавное обновление цифр
+        function renderScore() {
+            const currentTotal = serverScore + pendingClicks + inFlightClicks;
+            if (currentTotal !== lastRenderedScore) {
+                document.getElementById('score').innerText = currentTotal;
+                lastRenderedScore = currentTotal;
+            }
+            animationFrameId = requestAnimationFrame(renderScore);
         }
+
+        // Запускаем плавную отрисовку при старте
+        renderScore();
 
         async function syncClicks() {
             if (pendingClicks === 0 || isSyncing) return;
             
             isSyncing = true;
             const clicksToSend = pendingClicks;
-            
-            // Перекладываем из "очереди" в "в полете"
             pendingClicks = 0; 
             inFlightClicks = clicksToSend; 
             
             const data = await apiCall({ addScore: clicksToSend });
             
             if (data) {
-                serverScore = data.balance; // Обновляем подтвержденный баланс
-                inFlightClicks = 0; // Клики успешно доставлены
+                serverScore = data.balance; 
+                inFlightClicks = 0; 
             } else {
-                // Если ошибка сети, возвращаем клики обратно в очередь
                 pendingClicks += clicksToSend; 
                 inFlightClicks = 0;
             }
             
             isSyncing = false;
-            updateUI();
         }
 
         async function loadGame() {
@@ -108,7 +114,7 @@
                 serverScore = data.balance;
                 pendingClicks = 0;
                 inFlightClicks = 0;
-                updateUI();
+                
                 document.getElementById('income').innerText = `Доход: ${data.incomePerHour} / час`;
                 document.getElementById('status').innerText = "✅ " + data.message;
                 document.getElementById('status').style.color = "#4CAF50";
@@ -128,10 +134,12 @@
             if (clickTimestamps.length >= MAX_CPS) return; 
             
             clickTimestamps.push(now);
-            pendingClicks++; // Добавляем в очередь
-            updateUI();
+            pendingClicks++; 
             
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            // Вибрация вызывается только если это не перегружает процессор
+            if (tg.HapticFeedback) {
+                try { tg.HapticFeedback.impactOccurred('light'); } catch(e) {}
+            }
         });
 
         // Синхронизация каждую секунду
@@ -153,7 +161,6 @@
                 serverScore = data.balance;
                 pendingClicks = 0; 
                 inFlightClicks = 0;
-                updateUI();
                 document.getElementById('income').innerText = `Доход: ${data.incomePerHour} / час`;
                 document.getElementById('status').innerText = "✅ Доход улучшен!";
             }
@@ -165,7 +172,6 @@
                 serverScore = data.balance;
                 pendingClicks = 0; 
                 inFlightClicks = 0;
-                updateUI();
                 document.getElementById('status').innerText = "✅ Бонус получен! (+500)";
                 document.getElementById('status').style.color = "#4CAF50";
             }
