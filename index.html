@@ -18,7 +18,6 @@
         .tab-page.active { display: flex; animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Кликер */
         .score-container { text-align: center; margin-bottom: 10px; }
         .score { font-size: 56px; font-weight: 800; color: #ffd700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }
         .income { font-size: 14px; color: #8899a6; margin-top: 5px; }
@@ -32,7 +31,6 @@
         .auto-btn { margin-top: 20px; padding: 10px 20px; border-radius: 10px; background: #2b5278; color: white; font-weight: bold; border: none; display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .auto-btn.active { background: #4CAF50; }
 
-        /* Карточки */
         .card-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
         .card { background: #17212b; border-radius: 12px; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 1px solid #232e3c; }
         .card-info { display: flex; align-items: center; gap: 15px; text-align: left; }
@@ -64,7 +62,6 @@
 
     <div class="content">
         
-        <!-- КЛИКЕР -->
         <div class="tab-page active" id="page-clicker">
             <div class="score-container">
                 <div class="score" id="score">0</div>
@@ -78,38 +75,35 @@
             </div>
 
             <button class="coin-btn" id="clickBtn">🪙</button>
-            
-            <button class="auto-btn" id="autoBtn" style="display: none;">🤖 Включить Автокликер</button>
+            <button class="auto-btn" id="autoBtn" style="display: none;">▶️ Включить Автокликер</button>
         </div>
 
-        <!-- МАГАЗИН -->
         <div class="tab-page" id="page-shop">
             <h2 style="margin-bottom: 20px; color: #ffd700;">Магазин</h2>
             <div class="card-list">
                 <div class="card">
-                    <div class="card-info"><div class="card-icon">📈</div><div class="card-text"><h4>Бизнес</h4><p>+50 монет в час</p></div></div>
+                    <div class="card-info"><div class="card-icon">📈</div><div class="card-text"><h4>Бизнес</h4><p id="desc-income">+50 монет в час</p></div></div>
                     <button class="btn-buy" id="buy-income">Купить</button>
                 </div>
                 <div class="card">
-                    <div class="card-info"><div class="card-icon">👆</div><div class="card-text"><h4>Сила клика</h4><p>+1 монета за тап</p></div></div>
+                    <div class="card-info"><div class="card-icon">👆</div><div class="card-text"><h4>Сила клика</h4><p id="desc-tap">+1 монета за тап</p></div></div>
                     <button class="btn-buy" id="buy-tap">Купить</button>
                 </div>
                 <div class="card">
-                    <div class="card-info"><div class="card-icon">⚡</div><div class="card-text"><h4>Лимит энергии</h4><p>+500 к максимуму</p></div></div>
+                    <div class="card-info"><div class="card-icon">⚡</div><div class="card-text"><h4>Лимит энергии</h4><p id="desc-energy">+500 к максимуму</p></div></div>
                     <button class="btn-buy" id="buy-energy">Купить</button>
                 </div>
                 <div class="card">
-                    <div class="card-info"><div class="card-icon">🔄</div><div class="card-text"><h4>Скорость энергии</h4><p>+1 ед. в секунду</p></div></div>
+                    <div class="card-info"><div class="card-icon">🔄</div><div class="card-text"><h4>Скорость энергии</h4><p id="desc-regen">+1 ед. в секунду</p></div></div>
                     <button class="btn-buy" id="buy-regen">Купить</button>
                 </div>
                 <div class="card" style="border-color: #ffd700;">
-                    <div class="card-info"><div class="card-icon">🤖</div><div class="card-text"><h4>Автокликер</h4><p>Кликает сам (10к)</p></div></div>
-                    <button class="btn-buy" id="buy-auto">Купить</button>
+                    <div class="card-info"><div class="card-icon">🤖</div><div class="card-text"><h4>Автокликер</h4><p>Кликает сам</p></div></div>
+                    <button class="btn-buy" id="buy-auto">10000 🪙</button>
                 </div>
             </div>
         </div>
 
-        <!-- ЗАДАНИЯ -->
         <div class="tab-page" id="page-tasks">
             <h2 style="margin-bottom: 20px; color: #ffd700;">Задания</h2>
             <div class="card-list">
@@ -121,14 +115,9 @@
                     <div class="card-info"><div class="card-icon">👥</div><div class="card-text"><h4>Пригласи друга</h4><p>+5000 монет</p></div></div>
                     <button class="btn-task" id="task-friend">Выполнить</button>
                 </div>
-                <div class="card">
-                    <div class="card-info"><div class="card-icon">🐦</div><div class="card-text"><h4>Подпишись на Twitter</h4><p>+5000 монет</p></div></div>
-                    <button class="btn-task" id="task-twitter">Выполнить</button>
-                </div>
             </div>
         </div>
 
-        <!-- ДОСТИЖЕНИЯ -->
         <div class="tab-page" id="page-ach">
             <h2 style="margin-bottom: 20px; color: #ffd700;">Достижения</h2>
             <div class="card-list">
@@ -143,7 +132,6 @@
             </div>
         </div>
 
-        <!-- ТОП -->
         <div class="tab-page" id="page-top">
             <h2 style="margin-bottom: 20px; color: #ffd700;">🏆 Топ</h2>
             <div class="card-list" id="leaderboardList"></div>
@@ -212,11 +200,15 @@
         }
 
         function updateShopPrices(data) {
-            // Просто обновляем текст на кнопках (цены на сервере, тут для красоты)
-            document.getElementById('buy-income').innerText = (500 + data.incomePerHour * 2) + ' 🪙';
-            document.getElementById('buy-tap').innerText = (1000 + data.tapPower * 500) + ' 🪙';
-            document.getElementById('buy-energy').innerText = (2000 + data.maxEnergy * 2) + ' 🪙';
-            document.getElementById('buy-regen').innerText = (5000 * data.energyRegen) + ' 🪙';
+            // Цены совпадают с формулой на сервере
+            document.getElementById('buy-income').innerText = Math.floor(500 * Math.pow(1.5, data.incLevel || 0)) + ' 🪙';
+            document.getElementById('desc-income').innerText = '+' + (50 * ((data.incLevel || 0) + 1)) + ' монет в час';
+            
+            document.getElementById('buy-tap').innerText = Math.floor(1000 * Math.pow(1.6, data.tapLevel || 0)) + ' 🪙';
+            
+            document.getElementById('buy-energy').innerText = Math.floor(2000 * Math.pow(1.5, data.engLevel || 0)) + ' 🪙';
+            
+            document.getElementById('buy-regen').innerText = Math.floor(5000 * Math.pow(1.7, data.regLevel || 0)) + ' 🪙';
         }
 
         async function loadGame() {
@@ -248,12 +240,10 @@
         function updateTasksUI() {
             if (tasks['channel']) document.getElementById('task-channel').disabled = true;
             if (tasks['friend']) document.getElementById('task-friend').disabled = true;
-            if (tasks['twitter']) document.getElementById('task-twitter').disabled = true;
             if (achs['rich_100k']) document.getElementById('ach-rich').disabled = true;
             if (achs['energy_master']) document.getElementById('ach-energy').disabled = true;
         }
 
-        // КЛИК
         document.getElementById('clickBtn').addEventListener('click', () => {
             if (currentEnergy < currentTap) {
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
@@ -265,14 +255,14 @@
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         });
 
-        // АВТОКЛИКЕР (Логика: раз в секунду)
+        // АВТОКЛИКЕР (Ускорен до 500мс = 2 клика в сек)
         setInterval(() => {
             if (autoClickerActive && currentEnergy >= currentTap) {
                 pendingClicks++;
                 currentEnergy -= currentTap;
                 updateEnergyUI();
             }
-        }, 800); // 800мс = ~1.2 клика в секунду
+        }, 500); 
 
         document.getElementById('autoBtn').addEventListener('click', function() {
             autoClickerActive = !autoClickerActive;
@@ -298,7 +288,6 @@
             
             if (data) {
                 serverScore = data.balance; inFlightClicks = 0; 
-                // Синхронизируем энергию с сервером (чтобы не было расхождений)
                 currentEnergy = data.energy; updateEnergyUI();
             } else {
                 pendingClicks += clicksToSend; inFlightClicks = 0;
@@ -306,7 +295,6 @@
             isSyncing = false;
         }
 
-        // ПОКУПКИ
         async function buy(act) {
             const data = await apiCall({ action: act });
             if (data) {
@@ -324,7 +312,6 @@
         document.getElementById('buy-regen').onclick = () => buy('upgrade_regen');
         document.getElementById('buy-auto').onclick = () => buy('buy_autoclicker');
 
-        // ЗАДАНИЯ И ДОСТИЖЕНИЯ
         async function doTask(type, id) {
             const data = await apiCall({ action: type, taskId: id, achId: id });
             if (data) {
@@ -332,13 +319,12 @@
                 tasks = data.tasksCompleted; achs = data.achievementsCompleted;
                 updateTasksUI();
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                if (tg.showAlert) tg.showAlert('Получено!');
+                if (tg.showAlert) tg.showAlert('Успешно получено!');
             }
         }
 
         document.getElementById('task-channel').onclick = () => doTask('complete_task', 'channel');
         document.getElementById('task-friend').onclick = () => doTask('complete_task', 'friend');
-        document.getElementById('task-twitter').onclick = () => doTask('complete_task', 'twitter');
         document.getElementById('ach-rich').onclick = () => doTask('claim_achievement', 'rich_100k');
         document.getElementById('ach-energy').onclick = () => doTask('claim_achievement', 'energy_master');
 
