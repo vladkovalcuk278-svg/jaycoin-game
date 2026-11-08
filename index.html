@@ -8,12 +8,30 @@
     <style>
         body { background-color: #17212b; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; user-select: none; -webkit-user-select: none; }
         h2 { font-size: 24px; margin-bottom: 5px; }
-        .score { font-size: 48px; font-weight: 800; margin: 10px 0; color: #ffd700; height: 58px; /* Фиксируем высоту, чтобы верстка не прыгала */ }
+        .score { font-size: 48px; font-weight: 800; margin: 10px 0; color: #ffd700; height: 58px; }
         .income { font-size: 14px; color: #aaa; margin-bottom: 15px; }
-        .coin-btn { width: 180px; height: 180px; border-radius: 50%; border: 6px solid #d4af37; background: radial-gradient(circle, #ffd700 0%, #b8860b 100%); font-size: 80px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0 auto; transition: transform 0.05s; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        /* ВОТ ЗДЕСЬ ДОБАВЛЕНА СТРОКА ПРО СИНИЙ КВАДРАТ */
+        .coin-btn { 
+            width: 180px; 
+            height: 180px; 
+            border-radius: 50%; 
+            border: 6px solid #d4af37; 
+            background: radial-gradient(circle, #ffd700 0%, #b8860b 100%); 
+            font-size: 80px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin: 0 auto; 
+            transition: transform 0.05s; 
+            outline: none; 
+            -webkit-tap-highlight-color: transparent; /* Убирает синий квадрат при тапе */
+        }
+        
         .coin-btn:active { transform: scale(0.92); }
         .actions { display: flex; justify-content: center; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
-        .btn { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: #2b5278; color: white; outline: none; }
+        .btn { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: #2b5278; color: white; outline: none; -webkit-tap-highlight-color: transparent; }
         .btn:active { opacity: 0.8; }
         #status { margin-top: 20px; font-size: 13px; color: #7f91a4; min-height: 20px; }
         .leaderboard { margin-top: 30px; text-align: left; background: #232e3c; padding: 15px; border-radius: 10px; }
@@ -51,10 +69,9 @@
         let pendingClicks = 0;     
         let inFlightClicks = 0;    
         let isSyncing = false;
-        let lastRenderedScore = -1; // Для плавной отрисовки
+        let lastRenderedScore = -1; 
         let animationFrameId = null;
 
-        // Античит (CPS)
         const MAX_CPS = 20; 
         let clickTimestamps = []; 
 
@@ -74,7 +91,6 @@
             }
         }
 
-        // Плавное обновление цифр
         function renderScore() {
             const currentTotal = serverScore + pendingClicks + inFlightClicks;
             if (currentTotal !== lastRenderedScore) {
@@ -84,7 +100,6 @@
             animationFrameId = requestAnimationFrame(renderScore);
         }
 
-        // Запускаем плавную отрисовку при старте
         renderScore();
 
         async function syncClicks() {
@@ -126,7 +141,6 @@
             }
         }
 
-        // Клик
         document.getElementById('clickBtn').addEventListener('click', () => {
             const now = Date.now();
             clickTimestamps = clickTimestamps.filter(time => now - time < 1000);
@@ -136,18 +150,15 @@
             clickTimestamps.push(now);
             pendingClicks++; 
             
-            // Вибрация вызывается только если это не перегружает процессор
             if (tg.HapticFeedback) {
                 try { tg.HapticFeedback.impactOccurred('light'); } catch(e) {}
             }
         });
 
-        // Синхронизация каждую секунду
         setInterval(() => {
             if (pendingClicks > 0) syncClicks();
         }, 1000);
 
-        // Очистка при закрытии
         window.addEventListener('beforeunload', () => {
             if (pendingClicks > 0) {
                 const payload = JSON.stringify({ initData: tg.initData, addScore: pendingClicks });
