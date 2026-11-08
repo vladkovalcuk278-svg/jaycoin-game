@@ -7,7 +7,6 @@
     <!-- Подключаем официальный скрипт Telegram -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Стилизуем игру под темную тему Telegram */
         body {
             background-color: #17212b;
             color: white;
@@ -15,19 +14,15 @@
             text-align: center;
             margin: 0;
             padding: 20px;
-            user-select: none; /* Запрещаем случайное выделение текста при кликах */
+            user-select: none;
             -webkit-user-select: none;
         }
-        h2 {
-            font-size: 24px;
-            color: #e5e5e5;
-            margin-bottom: 10px;
-        }
+        h2 { font-size: 24px; color: #e5e5e5; margin-bottom: 10px; }
         .score {
             font-size: 56px;
             font-weight: 800;
             margin: 10px 0 30px 0;
-            color: #ffd700; /* Золотой цвет */
+            color: #ffd700;
             text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
         }
         .coin-btn {
@@ -46,15 +41,14 @@
             justify-content: center;
             margin: 0 auto;
         }
-        /* Эффект нажатия */
-        .coin-btn:active {
-            transform: scale(0.92);
-        }
+        .coin-btn:active { transform: scale(0.92); }
         #status {
             margin-top: 40px;
             font-size: 14px;
             color: #7f91a4;
             min-height: 20px;
+            padding: 0 10px;
+            word-wrap: break-word;
         }
     </style>
 </head>
@@ -68,12 +62,10 @@
     <div id="status">Подключение к серверу...</div>
 
     <script>
-        // 1. Инициализация Telegram Mini App
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Развернуть игру на весь экран
-        tg.ready();  // Сообщить Telegram, что приложение загружено
+        tg.expand();
+        tg.ready();
 
-        // ВАША ССЫЛКА НА ФУНКЦИЮ SUPABASE (уже вставлена)
         const SUPABASE_FUNCTION_URL = 'https://zyarmtfnzupyzqpklajg.supabase.co/functions/v1/jaycoin-api';
 
         let score = 0;
@@ -81,7 +73,6 @@
         const statusElement = document.getElementById('status');
         const clickBtn = document.getElementById('clickBtn');
 
-        // 2. Функция для отправки клика на сервер
         async function sendClickToServer() {
             try {
                 const response = await fetch(SUPABASE_FUNCTION_URL, {
@@ -89,17 +80,18 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    // Отправляем tg.initData — это уникальный подписанный ключ пользователя от Telegram
                     body: JSON.stringify({ initData: tg.initData }) 
                 });
                 
                 const data = await response.json();
                 
-                if (data.success) {
-                    statusElement.innerText = "✅ Сервер: " + data.message;
+                // Если ответ успешный и success: true
+                if (response.ok && data.success) {
+                    statusElement.innerText = "✅ " + data.message;
                     statusElement.style.color = "#4CAF50";
                 } else {
-                    statusElement.innerText = "❌ Ошибка: " + data.error;
+                    // Если сервер вернул ошибку (401), показываем её точный текст
+                    statusElement.innerText = "❌ Ошибка: " + (data.error || "Неизвестная ошибка");
                     statusElement.style.color = "#f44336";
                 }
             } catch (error) {
@@ -108,23 +100,21 @@
             }
         }
 
-        // 3. Обработка клика по монете
         clickBtn.addEventListener('click', () => {
             score++;
             scoreElement.innerText = score;
             
-            // Вибрация при нажатии (если устройство поддерживает)
             if (tg.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('light');
             }
             
-            // Отправляем данные на сервер каждый 10-й клик, чтобы сервер не упал от нагрузки
+            // Отправляем на сервер каждый 10-й клик
             if (score % 10 === 0) {
                 sendClickToServer();
             }
         });
 
-        // Проверяем связь с сервером сразу при открытии игры
+        // Проверяем связь при загрузке
         sendClickToServer();
     </script>
 </body>
