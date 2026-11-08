@@ -121,7 +121,6 @@
             </div>
         </div>
 
-        <!-- ВКЛАДКА: РЕФЕРАЛЫ -->
         <div class="tab-page" id="page-refs">
             <h2 style="margin-bottom: 20px; color: #ffd700;">Реферальная система</h2>
             <div class="card-list" style="text-align: center;">
@@ -182,6 +181,10 @@
         let hasAutoClicker = false, autoClickerActive = false;
         let tasks = {}, achs = {}, myRefCode = '';
 
+        // ВОТ ЗДЕСЬ МЫ ВЫТАСКИВАЕМ РЕФ-КОД ИЗ URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const startParamFromUrl = urlParams.get('tgWebAppStartParam') || urlParams.get('start');
+
         async function apiCall(payload) {
             try {
                 const res = await fetch(URL, {
@@ -189,7 +192,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         initData: tg.initData, 
-                        startParam: tg.initDataUnsafe?.start_param,
+                        // Передаем тот параметр, который нашли в URL, либо стандартный
+                        startParam: startParamFromUrl || tg.initDataUnsafe?.start_param,
                         ...payload 
                     })
                 });
@@ -269,7 +273,6 @@
             if (achs['energy_master']) document.getElementById('ach-energy').disabled = true;
         }
 
-        // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРИГЛАШЕНИЯ
         function inviteFriend() {
             if (!myRefCode) {
                 tg.showAlert("Подождите, игра загружается...");
@@ -278,12 +281,10 @@
             const refLink = `https://t.me/JayCoinGameBot?start=${myRefCode}`;
             const text = `🪙 Залетай в JayCoin! Там можно заработать реальные монеты. Жми сюда: `;
             
-            // Используем официальную функцию Telegram для отправки ссылки
             const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(text)}`;
             tg.openTelegramLink(shareUrl);
         }
 
-        // Копирование ссылки
         function copyRefLink() {
             if (!myRefCode) return;
             const refLink = `https://t.me/JayCoinGameBot?start=${myRefCode}`;
