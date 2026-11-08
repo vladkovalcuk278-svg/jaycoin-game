@@ -40,7 +40,9 @@
         .btn-buy, .btn-task { background: #2b5278; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; }
         .btn-buy:active, .btn-task:active { opacity: 0.8; }
         .btn-buy:disabled, .btn-task:disabled { background: #232e3c; color: #5a6b7c; }
-        .btn-invite { background: #ffd700; color: #000; width: 100%; padding: 15px; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 20px; border: none; cursor: pointer; }
+        
+        .btn-invite { background: #ffd700; color: #000; width: 100%; padding: 15px; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 10px; border: none; cursor: pointer; }
+        .btn-copy { background: #2b5278; color: #fff; width: 100%; padding: 10px; border-radius: 12px; font-size: 14px; font-weight: bold; margin-top: 10px; border: none; cursor: pointer; }
 
         .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: #17212b; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.3); z-index: 10; padding-bottom: env(safe-area-inset-bottom); }
         .nav-btn { background: none; border: none; color: #5a6b7c; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: color 0.2s; flex: 1; }
@@ -119,7 +121,7 @@
             </div>
         </div>
 
-        <!-- НОВАЯ ВКЛАДКА: РЕФЕРАЛЫ -->
+        <!-- ВКЛАДКА: РЕФЕРАЛЫ -->
         <div class="tab-page" id="page-refs">
             <h2 style="margin-bottom: 20px; color: #ffd700;">Реферальная система</h2>
             <div class="card-list" style="text-align: center;">
@@ -128,7 +130,8 @@
                     <h3 style="margin-bottom: 10px;">Приглашай друзей!</h3>
                     <p style="color: #8899a6; margin-bottom: 20px; font-size: 14px;">Получай +5000 монет за каждого друга, который зайдет по твоей ссылке.</p>
                     <div style="font-size: 18px; font-weight: bold; margin-bottom: 20px;">Ты пригласил: <span id="ref-count" style="color: #ffd700;">0</span> друзей</div>
-                    <button class="btn-invite" id="inviteBtn">Отправить ссылку в чат</button>
+                    <button class="btn-invite" id="inviteBtn">Отправить ссылку</button>
+                    <button class="btn-copy" id="copyBtn">Скопировать ссылку</button>
                 </div>
             </div>
         </div>
@@ -186,7 +189,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         initData: tg.initData, 
-                        startParam: tg.initDataUnsafe?.start_param, // Передаем реф-код на сервер!
+                        startParam: tg.initDataUnsafe?.start_param,
                         ...payload 
                     })
                 });
@@ -239,7 +242,7 @@
                 currentEnergy = data.energy; currentMaxEnergy = data.maxEnergy; currentRegen = data.energyRegen;
                 currentTap = data.tapPower;
                 tasks = data.tasksCompleted || {}; achs = data.achievementsCompleted || {};
-                myRefCode = data.refCode; // Сохраняем реф-код
+                myRefCode = data.refCode;
 
                 document.getElementById('income').innerText = `+${data.incomePerHour} / час`;
                 document.getElementById('ref-count').innerText = data.invitedFriends || 0;
@@ -266,20 +269,34 @@
             if (achs['energy_master']) document.getElementById('ach-energy').disabled = true;
         }
 
-        // ФУНКЦИЯ ПРИГЛАШЕНИЯ (Отправляет ссылку в чат)
+        // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРИГЛАШЕНИЯ
         function inviteFriend() {
-            if (!myRefCode) return;
-            const botUsername = tg.initDataUnsafe?.user?.username ? 'JayCoinGameBot' : 'JayCoinGameBot'; // Твой бот
+            if (!myRefCode) {
+                tg.showAlert("Подождите, игра загружается...");
+                return;
+            }
             const refLink = `https://t.me/JayCoinGameBot?start=${myRefCode}`;
+            const text = `🪙 Залетай в JayCoin! Там можно заработать реальные монеты. Жми сюда: `;
             
-            // Открываем окно "Поделиться" в Telegram
-            tg.switchInlineQuery(`Присоединяйся к JayCoin! ${refLink}`);
-            // Или используем стандартную ссылку
-            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent('Залетай в JayCoin, там можно заработать!')}`);
+            // Используем официальную функцию Telegram для отправки ссылки
+            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(text)}`;
+            tg.openTelegramLink(shareUrl);
+        }
+
+        // Копирование ссылки
+        function copyRefLink() {
+            if (!myRefCode) return;
+            const refLink = `https://t.me/JayCoinGameBot?start=${myRefCode}`;
+            navigator.clipboard.writeText(refLink).then(() => {
+                tg.showAlert("Ссылка скопирована! Отправь её другу.");
+            }).catch(() => {
+                tg.showAlert("Не удалось скопировать. Ссылка: " + refLink);
+            });
         }
 
         document.getElementById('inviteBtn').addEventListener('click', inviteFriend);
         document.getElementById('task-friend').addEventListener('click', inviteFriend);
+        document.getElementById('copyBtn').addEventListener('click', copyRefLink);
 
         document.getElementById('clickBtn').addEventListener('click', () => {
             if (currentEnergy < currentTap) {
