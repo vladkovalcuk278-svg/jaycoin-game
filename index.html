@@ -7,77 +7,127 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { background-color: #17212b; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; user-select: none; }
-        h2 { font-size: 24px; color: #e5e5e5; margin-bottom: 10px; }
-        .score { font-size: 56px; font-weight: 800; margin: 10px 0 30px 0; color: #ffd700; }
-        .coin-btn { width: 220px; height: 220px; border-radius: 50%; border: 6px solid #d4af37; background: radial-gradient(circle, #ffd700 0%, #b8860b 100%); font-size: 100px; cursor: pointer; transition: transform 0.05s ease; box-shadow: 0 15px 35px rgba(0,0,0,0.4); outline: none; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+        h2 { font-size: 24px; margin-bottom: 5px; }
+        .score { font-size: 48px; font-weight: 800; margin: 10px 0; color: #ffd700; }
+        .income { font-size: 14px; color: #aaa; margin-bottom: 15px; }
+        .coin-btn { width: 180px; height: 180px; border-radius: 50%; border: 6px solid #d4af37; background: radial-gradient(circle, #ffd700 0%, #b8860b 100%); font-size: 80px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0 auto; transition: transform 0.05s; }
         .coin-btn:active { transform: scale(0.92); }
-        #status { margin-top: 40px; font-size: 14px; color: #7f91a4; min-height: 20px; padding: 0 10px; }
+        .actions { display: flex; justify-content: center; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        .btn { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: #2b5278; color: white; }
+        .btn:active { opacity: 0.8; }
+        #status { margin-top: 20px; font-size: 13px; color: #7f91a4; min-height: 20px; }
+        .leaderboard { margin-top: 30px; text-align: left; background: #232e3c; padding: 15px; border-radius: 10px; }
+        .leaderboard h3 { margin-top: 0; font-size: 16px; color: #ffd700; }
+        .leaderboard-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #333; font-size: 14px; }
     </style>
 </head>
 <body>
     <h2>JayCoin</h2>
     <div class="score" id="score">0</div>
+    <div class="income" id="income">Доход: 0 / час</div>
+    
     <button class="coin-btn" id="clickBtn">🪙</button>
-    <div id="status">Подключение...</div>
+    
+    <div class="actions">
+        <button class="btn" id="upgradeBtn">Улучшить доход (1000)</button>
+        <button class="btn" id="bonusBtn">Ежедневный бонус</button>
+    </div>
+
+    <div id="status">Загрузка...</div>
+
+    <div class="leaderboard">
+        <h3>🏆 Топ игроков</h3>
+        <div id="leaderboardList">Загрузка...</div>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.ready();
 
-        const SUPABASE_FUNCTION_URL = 'https://zyarmtfnzupyzqpklajg.supabase.co/functions/v1/jaycoin-api';
-        
+        const URL = 'https://zyarmtfnzupyzqpklajg.supabase.co/functions/v1/jaycoin-api';
         let score = 0;
-        let clicksSinceSync = 0; // Считаем клики для отправки
-        const scoreElement = document.getElementById('score');
-        const statusElement = document.getElementById('status');
+        let clicks = 0;
+        let isLoaded = false;
 
-        // Функция отправки на сервер
-        async function syncWithServer(addScore) {
+        async function apiCall(payload) {
             try {
-                const response = await fetch(SUPABASE_FUNCTION_URL, {
+                const res = await fetch(URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        initData: tg.initData,
-                        addScore: addScore // Сколько монет прибавить (0, если просто загрузка)
-                    }) 
+                    body: JSON.stringify({ initData: tg.initData, ...payload })
                 });
-                
-                const data = await response.json();
-                
-                if (response.ok && data.success) {
-                    // Сервер вернул актуальный баланс, ставим его
-                    score = data.balance;
-                    scoreElement.innerText = score;
-                    statusElement.innerText = "✅ " + data.message;
-                    statusElement.style.color = "#4CAF50";
-                } else {
-                    statusElement.innerText = "❌ " + (data.error || "Ошибка");
-                    statusElement.style.color = "#f44336";
-                }
-            } catch (error) {
-                statusElement.innerText = "⚠️ Ошибка сети";
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                return data;
+            } catch (e) {
+                document.getElementById('status').innerText = "❌ " + e.message;
+                document.getElementById('status').style.color = "#f44336";
+                return null;
             }
         }
 
-        // Обработка клика
-        document.getElementById('clickBtn').addEventListener('click', () => {
+        async function loadGame() {
+            const data = await apiCall({});
+            if (data) {
+                score = data.balance;
+                document.getElementById('score').innerText = score;
+                document.getElementById('income').innerText = `Доход: ${data.incomePerHour} / час`;
+                document.getElementById('status').innerText = "✅ " + data.message;
+                document.getElementById('status').style.color = "#4CAF50";
+                
+                // Отрисовка лидеров
+                const list = document.getElementById('leaderboardList');
+                list.innerHTML = data.leaderboard.map((p, i) => 
+                    `<div class="leaderboard-item"><span>${i+1}. ${p.username || 'Игрок'}</span> <span>${p.balance}</span></div>`
+                ).join('');
+
+                isLoaded = true;
+            }
+        }
+
+        // Клик
+        document.getElementById('clickBtn').addEventListener('click', async () => {
+            if (!isLoaded) return;
             score++;
-            scoreElement.innerText = score;
-            clicksSinceSync++;
+            document.getElementById('score').innerText = score;
+            tg.HapticFeedback.impactOccurred('light');
             
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            
-            // Каждые 5 кликов отправляем на сервер и сохраняем
-            if (clicksSinceSync >= 5) {
-                syncWithServer(clicksSinceSync);
-                clicksSinceSync = 0; // Сбрасываем счетчик
+            clicks++;
+            if (clicks >= 10) {
+                const data = await apiCall({ addScore: clicks });
+                if (data) {
+                    score = data.balance;
+                    document.getElementById('score').innerText = score;
+                }
+                clicks = 0;
             }
         });
 
-        // При загрузке игры запрашиваем баланс из базы (addScore = 0)
-        syncWithServer(0);
+        // Улучшение
+        document.getElementById('upgradeBtn').addEventListener('click', async () => {
+            const data = await apiCall({ action: 'upgrade_income' });
+            if (data) {
+                score = data.balance;
+                document.getElementById('score').innerText = score;
+                document.getElementById('income').innerText = `Доход: ${data.incomePerHour} / час`;
+                document.getElementById('status').innerText = "✅ Доход улучшен!";
+                document.getElementById('status').style.color = "#4CAF50";
+            }
+        });
+
+        // Бонус
+        document.getElementById('bonusBtn').addEventListener('click', async () => {
+            const data = await apiCall({ action: 'daily_bonus' });
+            if (data) {
+                score = data.balance;
+                document.getElementById('score').innerText = score;
+                document.getElementById('status').innerText = "✅ Бонус получен! (+500)";
+                document.getElementById('status').style.color = "#4CAF50";
+            }
+        });
+
+        loadGame();
     </script>
 </body>
 </html>
