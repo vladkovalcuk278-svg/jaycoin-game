@@ -46,9 +46,10 @@
         tg.ready();
 
         const URL = 'https://zyarmtfnzupyzqpklajg.supabase.co/functions/v1/jaycoin-api';
-        let score = 0;
-        let clicks = 0;
-        let isLoaded = false;
+        
+        let serverScore = 0; // Баланс, который подтвердил сервер
+        let unsyncedClicks = 0; // Клики, которые еще не улетели на сервер
+        let isSyncing = false;
 
         async function apiCall(payload) {
             try {
@@ -67,61 +68,87 @@
             }
         }
 
+        function updateUI() {
+            // Показываем на экране: сохраненный баланс + то, что мы только что накликали
+            document.getElementById('score').innerText = serverScore + unsyncedClicks;
+        }
+
+        async function syncClicks() {
+            if (unsyncedClicks === 0 || isSyncing) return;
+            
+            isSyncing = true;
+            const clicksToSend = unsyncedClicks;
+            unsyncedClicks = 0; // Временно обнуляем
+            
+            const data = await apiCall({ addScore: clicksToSend });
+            
+            if (data) {
+                serverScore = data.balance; // Обновляем сохраненный баланс
+            } else {
+                // Если ошибка сети, возвращаем клики обратно, чтобы не потерять
+                unsyncedClicks += clicksToSend; 
+            }
+            
+            isSyncing = false;
+            updateUI();
+        }
+
         async function loadGame() {
             const data = await apiCall({});
             if (data) {
-                score = data.balance;
-                document.getElementById('score').innerText = score;
+                serverScore = data.balance;
+                unsyncedClicks = 0;
+                updateUI();
+                
                 document.getElementById('income').innerText = `Доход: ${data.incomePerHour} / час`;
                 document.getElementById('status').innerText = "✅ " + data.message;
                 document.getElementById('status').style.color = "#4CAF50";
                 
-                // Отрисовка лидеров
                 const list = document.getElementById('leaderboardList');
                 list.innerHTML = data.leaderboard.map((p, i) => 
                     `<div class="leaderboard-item"><span>${i+1}. ${p.username || 'Игрок'}</span> <span>${p.balance}</span></div>`
                 ).join('');
-
-                isLoaded = true;
             }
         }
 
         // Клик
-        document.getElementById('clickBtn').addEventListener('click', async () => {
-            if (!isLoaded) return;
-            score++;
-            document.getElementById('score').innerText = score;
-            tg.HapticFeedback.impactOccurred('light');
+        document.getElementById('clickBtn').addEventListener('click', () => {
+            unsyncedClicks++;
+            updateUI();
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             
-            clicks++;
-            if (clicks >= 10) {
-                const data = await apiCall({ addScore: clicks });
-                if (data) {
-                    score = data.balance;
-                    document.getElementById('score').innerText = score;
-                }
-                clicks = 0;
+            // Отправляем каждые 20 кликов
+            if (unsyncedClicks >= 20) {
+                syncClicks();
             }
         });
 
-        // Улучшение
+        // Обновление при закрытии (сохраняем остатки)
+        window.addEventListener('beforeunload', () => {
+            if (unsyncedClicks > 0) {
+                // Используем sendBeacon для отправки при закрытии, если поддерживается
+                const payload = JSON.stringify({ initData: tg.initData, addScore: unsyncedClicks });
+                navigator.sendBeacon(URL, payload); 
+            }
+        });
+
         document.getElementById('upgradeBtn').addEventListener('click', async () => {
             const data = await apiCall({ action: 'upgrade_income' });
             if (data) {
-                score = data.balance;
-                document.getElementById('score').innerText = score;
+                serverScore = data.balance;
+                unsyncedClicks = 0; // Сбрасываем несинхронизированные, так как купили улучшение
+                updateUI();
                 document.getElementById('income').innerText = `Доход: ${data.incomePerHour} / час`;
                 document.getElementById('status').innerText = "✅ Доход улучшен!";
-                document.getElementById('status').style.color = "#4CAF50";
             }
         });
 
-        // Бонус
         document.getElementById('bonusBtn').addEventListener('click', async () => {
             const data = await apiCall({ action: 'daily_bonus' });
             if (data) {
-                score = data.balance;
-                document.getElementById('score').innerText = score;
+                serverScore = data.balance;
+                unsyncedClicks = 0;
+                updateUI();
                 document.getElementById('status').innerText = "✅ Бонус получен! (+500)";
                 document.getElementById('status').style.color = "#4CAF50";
             }
