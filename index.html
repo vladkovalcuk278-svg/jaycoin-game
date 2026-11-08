@@ -11,14 +11,14 @@
         .score { font-size: 56px; font-weight: 800; margin: 10px 0 30px 0; color: #ffd700; }
         .coin-btn { width: 220px; height: 220px; border-radius: 50%; border: 6px solid #d4af37; background: radial-gradient(circle, #ffd700 0%, #b8860b 100%); font-size: 100px; cursor: pointer; transition: transform 0.05s ease; box-shadow: 0 15px 35px rgba(0,0,0,0.4); outline: none; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
         .coin-btn:active { transform: scale(0.92); }
-        #status { margin-top: 40px; font-size: 14px; color: #7f91a4; min-height: 20px; padding: 0 10px; word-wrap: break-word; }
+        #status { margin-top: 40px; font-size: 14px; color: #7f91a4; min-height: 20px; padding: 0 10px; }
     </style>
 </head>
 <body>
     <h2>JayCoin</h2>
     <div class="score" id="score">0</div>
     <button class="coin-btn" id="clickBtn">🪙</button>
-    <div id="status">Подключение к серверу...</div>
+    <div id="status">Подключение...</div>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -26,43 +26,58 @@
         tg.ready();
 
         const SUPABASE_FUNCTION_URL = 'https://zyarmtfnzupyzqpklajg.supabase.co/functions/v1/jaycoin-api';
+        
         let score = 0;
+        let clicksSinceSync = 0; // Считаем клики для отправки
         const scoreElement = document.getElementById('score');
         const statusElement = document.getElementById('status');
-        const clickBtn = document.getElementById('clickBtn');
 
-        async function sendClickToServer() {
+        // Функция отправки на сервер
+        async function syncWithServer(addScore) {
             try {
                 const response = await fetch(SUPABASE_FUNCTION_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ initData: tg.initData }) 
+                    body: JSON.stringify({ 
+                        initData: tg.initData,
+                        addScore: addScore // Сколько монет прибавить (0, если просто загрузка)
+                    }) 
                 });
                 
                 const data = await response.json();
                 
                 if (response.ok && data.success) {
+                    // Сервер вернул актуальный баланс, ставим его
+                    score = data.balance;
+                    scoreElement.innerText = score;
                     statusElement.innerText = "✅ " + data.message;
                     statusElement.style.color = "#4CAF50";
                 } else {
-                    // Показываем реальную ошибку от сервера
-                    statusElement.innerText = "❌ Ошибка: " + (data.error || "Сервер отклонил запрос");
+                    statusElement.innerText = "❌ " + (data.error || "Ошибка");
                     statusElement.style.color = "#f44336";
                 }
             } catch (error) {
-                statusElement.innerText = "⚠️ Ошибка сети: " + error.message;
-                statusElement.style.color = "#ff9800";
+                statusElement.innerText = "⚠️ Ошибка сети";
             }
         }
 
-        clickBtn.addEventListener('click', () => {
+        // Обработка клика
+        document.getElementById('clickBtn').addEventListener('click', () => {
             score++;
             scoreElement.innerText = score;
+            clicksSinceSync++;
+            
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            if (score % 10 === 0) sendClickToServer(); // Отправляем каждый 10-й клик
+            
+            // Каждые 5 кликов отправляем на сервер и сохраняем
+            if (clicksSinceSync >= 5) {
+                syncWithServer(clicksSinceSync);
+                clicksSinceSync = 0; // Сбрасываем счетчик
+            }
         });
 
-        sendClickToServer(); // Проверка при загрузке
+        // При загрузке игры запрашиваем баланс из базы (addScore = 0)
+        syncWithServer(0);
     </script>
 </body>
 </html>
