@@ -47,13 +47,14 @@
 
         const URL = 'https://zyarmtfnzupyzqpklajg.supabase.co/functions/v1/jaycoin-api';
         
-        let serverScore = 0; // Подтвержденный баланс
-        let unsyncedClicks = 0; // Очередь на отправку
+        let serverScore = 0;       // Баланс, подтвержденный сервером
+        let pendingClicks = 0;     // Клики, которые еще не отправлены
+        let inFlightClicks = 0;    // Клики, которые уже отправлены, но ответ еще не пришел
         let isSyncing = false;
 
-        // --- АНТИЧИТ (CPS) ---
-        const MAX_CPS = 20; // Максимум 20 кликов в секунду
-        let clickTimestamps = []; // Массив времени кликов
+        // Античит (CPS)
+        const MAX_CPS = 20; 
+        let clickTimestamps = []; 
 
         async function apiCall(payload) {
             try {
@@ -72,22 +73,29 @@
         }
 
         function updateUI() {
-            document.getElementById('score').innerText = serverScore + unsyncedClicks;
+            // На экране: подтвержденный баланс + клики в очереди + клики в полете
+            document.getElementById('score').innerText = serverScore + pendingClicks + inFlightClicks;
         }
 
         async function syncClicks() {
-            if (unsyncedClicks === 0 || isSyncing) return;
+            if (pendingClicks === 0 || isSyncing) return;
             
             isSyncing = true;
-            const clicksToSend = unsyncedClicks;
-            unsyncedClicks = 0; 
+            const clicksToSend = pendingClicks;
+            
+            // Перекладываем из "очереди" в "в полете"
+            pendingClicks = 0; 
+            inFlightClicks = clicksToSend; 
             
             const data = await apiCall({ addScore: clicksToSend });
             
             if (data) {
-                serverScore = data.balance; 
+                serverScore = data.balance; // Обновляем подтвержденный баланс
+                inFlightClicks = 0; // Клики успешно доставлены
             } else {
-                unsyncedClicks += clicksToSend; // Возврат при ошибке
+                // Если ошибка сети, возвращаем клики обратно в очередь
+                pendingClicks += clicksToSend; 
+                inFlightClicks = 0;
             }
             
             isSyncing = false;
@@ -98,7 +106,8 @@
             const data = await apiCall({});
             if (data) {
                 serverScore = data.balance;
-                unsyncedClicks = 0;
+                pendingClicks = 0;
+                inFlightClicks = 0;
                 updateUI();
                 document.getElementById('income').innerText = `Доход: ${data.incomePerHour} / час`;
                 document.getElementById('status').innerText = "✅ " + data.message;
@@ -114,31 +123,26 @@
         // Клик
         document.getElementById('clickBtn').addEventListener('click', () => {
             const now = Date.now();
-            
-            // Очищаем старые клики (старше 1 секунды)
             clickTimestamps = clickTimestamps.filter(time => now - time < 1000);
             
-            // Если кликаешь слишком быстро — блокируем
-            if (clickTimestamps.length >= MAX_CPS) {
-                return; // Клик не засчитывается
-            }
+            if (clickTimestamps.length >= MAX_CPS) return; 
             
             clickTimestamps.push(now);
-            unsyncedClicks++;
+            pendingClicks++; // Добавляем в очередь
             updateUI();
             
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         });
 
-        // Каждую секунду отправляем накопленные клики в фоне
+        // Синхронизация каждую секунду
         setInterval(() => {
-            if (unsyncedClicks > 0) syncClicks();
+            if (pendingClicks > 0) syncClicks();
         }, 1000);
 
-        // Обновление при закрытии
+        // Очистка при закрытии
         window.addEventListener('beforeunload', () => {
-            if (unsyncedClicks > 0) {
-                const payload = JSON.stringify({ initData: tg.initData, addScore: unsyncedClicks });
+            if (pendingClicks > 0) {
+                const payload = JSON.stringify({ initData: tg.initData, addScore: pendingClicks });
                 navigator.sendBeacon(URL, payload); 
             }
         });
@@ -147,7 +151,8 @@
             const data = await apiCall({ action: 'upgrade_income' });
             if (data) {
                 serverScore = data.balance;
-                unsyncedClicks = 0; // При покупке сбрасываем
+                pendingClicks = 0; 
+                inFlightClicks = 0;
                 updateUI();
                 document.getElementById('income').innerText = `Доход: ${data.incomePerHour} / час`;
                 document.getElementById('status').innerText = "✅ Доход улучшен!";
@@ -158,7 +163,8 @@
             const data = await apiCall({ action: 'daily_bonus' });
             if (data) {
                 serverScore = data.balance;
-                unsyncedClicks = 0; 
+                pendingClicks = 0; 
+                inFlightClicks = 0;
                 updateUI();
                 document.getElementById('status').innerText = "✅ Бонус получен! (+500)";
                 document.getElementById('status').style.color = "#4CAF50";
