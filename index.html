@@ -199,12 +199,24 @@
             document.getElementById('energy-fill').style.width = `${(currentEnergy / currentMaxEnergy) * 100}%`;
         }
 
+        // ЭТА ФУНКЦИЯ ТЕПЕРЬ ОБНОВЛЯЕТ КНОПКИ
         function updateShopPrices(data) {
-            document.getElementById('buy-income').innerText = Math.floor(500 * Math.pow(1.5, data.incLevel || 0)) + ' 🪙';
-            document.getElementById('desc-income').innerText = '+' + (50 * ((data.incLevel || 0) + 1)) + ' монет в час';
-            document.getElementById('buy-tap').innerText = Math.floor(1000 * Math.pow(1.6, data.tapLevel || 0)) + ' 🪙';
-            document.getElementById('buy-energy').innerText = Math.floor(2000 * Math.pow(1.5, data.engLevel || 0)) + ' 🪙';
-            document.getElementById('buy-regen').innerText = Math.floor(5000 * Math.pow(1.7, data.regLevel || 0)) + ' 🪙';
+            const incL = data.incLevel || 0;
+            const tapL = data.tapLevel || 0;
+            const engL = data.engLevel || 0;
+            const regL = data.regLevel || 0;
+
+            document.getElementById('buy-income').innerText = Math.floor(500 * Math.pow(1.5, incL)) + ' 🪙';
+            document.getElementById('desc-income').innerText = '+' + (50 * (incL + 1)) + ' монет в час';
+            
+            document.getElementById('buy-tap').innerText = Math.floor(1000 * Math.pow(1.6, tapL)) + ' 🪙';
+            document.getElementById('desc-tap').innerText = '+' + (1 + Math.floor((tapL + 1) / 2)) + ' монета за тап';
+            
+            document.getElementById('buy-energy').innerText = Math.floor(2000 * Math.pow(1.5, engL)) + ' 🪙';
+            document.getElementById('desc-energy').innerText = '+' + (500 * (engL + 1)) + ' к максимуму';
+            
+            document.getElementById('buy-regen').innerText = Math.floor(5000 * Math.pow(1.7, regL)) + ' 🪙';
+            document.getElementById('desc-regen').innerText = '+' + (regL + 1) + ' ед. в секунду';
         }
 
         async function loadGame() {
@@ -273,7 +285,6 @@
             }
         }, 1000);
 
-        // СИНХРОНИЗАЦИЯ
         async function syncClicks() {
             if (pendingClicks === 0 || isSyncing) return;
             isSyncing = true;
@@ -291,24 +302,19 @@
             isSyncing = false;
         }
 
-        // ГЛАВНОЕ ИСПРАВЛЕНИЕ: Покупка с принудительной синхронизацией
         async function buy(act) {
-            // 1. Принудительно синхронизируем все накопленные клики ПЕРЕД покупкой
             if (pendingClicks > 0) {
-                isSyncing = true; // Блокируем фоновую синхронизацию
+                isSyncing = true;
                 const clicksToSend = pendingClicks;
                 pendingClicks = 0;
                 
                 const syncData = await apiCall({ addScore: clicksToSend });
-                if (syncData) {
-                    serverScore = syncData.balance;
-                } else {
-                    pendingClicks += clicksToSend;
-                }
+                if (syncData) serverScore = syncData.balance;
+                else pendingClicks += clicksToSend;
+                
                 isSyncing = false;
             }
 
-            // 2. Теперь пытаемся купить (сервер проверит НАСТОЯЩИЙ баланс)
             const data = await apiCall({ action: act });
             if (data) {
                 serverScore = data.balance; 
@@ -317,10 +323,9 @@
                 currentRegen = data.energyRegen; 
                 currentTap = data.tapPower;
                 
-                // Обновляем UI
                 document.getElementById('income').innerText = `+${data.incomePerHour} / час`;
                 updateEnergyUI(); 
-                updateShopPrices(data);
+                updateShopPrices(data); // ОБНОВЛЯЕМ КНОПКИ
                 renderScore();
                 
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
