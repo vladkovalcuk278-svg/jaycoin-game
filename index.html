@@ -6,62 +6,170 @@
     <title>JayCoin Game</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background-color: #17212b; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; user-select: none; -webkit-user-select: none; }
-        h2 { font-size: 24px; margin-bottom: 5px; }
-        .score { font-size: 48px; font-weight: 800; margin: 10px 0; color: #ffd700; height: 58px; }
-        .income { font-size: 14px; color: #aaa; margin-bottom: 15px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #0e1621; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* ВОТ ЗДЕСЬ ДОБАВЛЕНА СТРОКА ПРО СИНИЙ КВАДРАТ */
-        .coin-btn { 
-            width: 180px; 
-            height: 180px; 
-            border-radius: 50%; 
-            border: 6px solid #d4af37; 
-            background: radial-gradient(circle, #ffd700 0%, #b8860b 100%); 
-            font-size: 80px; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            margin: 0 auto; 
-            transition: transform 0.05s; 
-            outline: none; 
-            -webkit-tap-highlight-color: transparent; /* Убирает синий квадрат при тапе */
-        }
+        /* Хедер */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #17212b; box-shadow: 0 2px 10px rgba(0,0,0,0.3); z-index: 10; }
+        .user-info { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 16px; }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: #2b5278; display: flex; justify-content: center; align-items: center; font-size: 18px; }
         
+        /* Основной контент */
+        .content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 90px; display: flex; flex-direction: column; align-items: center; }
+        .tab-page { display: none; width: 100%; flex-direction: column; align-items: center; }
+        .tab-page.active { display: flex; animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Кликер */
+        .score-container { text-align: center; margin-bottom: 10px; }
+        .score { font-size: 56px; font-weight: 800; color: #ffd700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }
+        .income { font-size: 14px; color: #8899a6; margin-top: 5px; }
+        
+        /* Энергия */
+        .energy-container { width: 80%; max-width: 300px; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: bold; }
+        .energy-bar { flex: 1; height: 8px; background: #232e3c; border-radius: 4px; overflow: hidden; }
+        .energy-fill { height: 100%; background: #ffd700; width: 100%; transition: width 0.3s; }
+        
+        /* Монета */
+        .coin-btn { width: 220px; height: 220px; border-radius: 50%; border: 8px solid #d4af37; background: radial-gradient(circle, #ffd700 0%, #b8860b 100%); font-size: 100px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 15px 35px rgba(0,0,0,0.5); transition: transform 0.05s; user-select: none; }
         .coin-btn:active { transform: scale(0.92); }
-        .actions { display: flex; justify-content: center; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
-        .btn { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: #2b5278; color: white; outline: none; -webkit-tap-highlight-color: transparent; }
-        .btn:active { opacity: 0.8; }
-        #status { margin-top: 20px; font-size: 13px; color: #7f91a4; min-height: 20px; }
-        .leaderboard { margin-top: 30px; text-align: left; background: #232e3c; padding: 15px; border-radius: 10px; }
-        .leaderboard h3 { margin-top: 0; font-size: 16px; color: #ffd700; }
-        .leaderboard-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #333; font-size: 14px; }
+
+        /* Карточки магазина и заданий */
+        .card-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
+        .card { background: #17212b; border-radius: 12px; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 1px solid #232e3c; }
+        .card-info { display: flex; align-items: center; gap: 15px; text-align: left; }
+        .card-icon { font-size: 28px; }
+        .card-text h4 { font-size: 16px; margin-bottom: 4px; color: #fff; }
+        .card-text p { font-size: 13px; color: #8899a6; }
+        .btn-buy, .btn-task { background: #2b5278; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .btn-buy:active, .btn-task:active { opacity: 0.8; }
+        .btn-buy:disabled, .btn-task:disabled { background: #232e3c; color: #5a6b7c; }
+
+        /* Навигация снизу */
+        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: #17212b; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.3); z-index: 10; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-btn { background: none; border: none; color: #5a6b7c; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: color 0.2s; }
+        .nav-btn i { font-size: 20px; font-style: normal; }
+        .nav-btn.active { color: #ffd700; }
+
+        /* Топ игроков */
+        .leaderboard-item { display: flex; justify-content: space-between; width: 100%; padding: 10px 15px; background: #17212b; border-radius: 8px; margin-bottom: 8px; font-weight: bold; }
+        .leaderboard-item:first-child { background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); color: #ffd700; }
     </style>
 </head>
 <body>
-    <h2>JayCoin</h2>
-    <div class="score" id="score">0</div>
-    <div class="income" id="income">Доход: 0 / час</div>
-    
-    <button class="coin-btn" id="clickBtn">🪙</button>
-    
-    <div class="actions">
-        <button class="btn" id="upgradeBtn">Улучшить доход (1000)</button>
-        <button class="btn" id="bonusBtn">Ежедневный бонус</button>
+
+    <!-- ХЕДЕР -->
+    <div class="header">
+        <div class="user-info">
+            <div class="user-avatar" id="avatar">👤</div>
+            <span id="username">Загрузка...</span>
+        </div>
+        <div style="font-weight: bold; color: #ffd700;" id="header-balance">0</div>
     </div>
 
-    <div id="status">Загрузка...</div>
+    <!-- КОНТЕНТ -->
+    <div class="content">
+        
+        <!-- ВКЛАДКА 1: КЛИКЕР -->
+        <div class="tab-page active" id="page-clicker">
+            <div class="score-container">
+                <div class="score" id="score">0</div>
+                <div class="income" id="income">+0 / час</div>
+            </div>
+            
+            <div class="energy-container">
+                <span>⚡</span>
+                <div class="energy-bar"><div class="energy-fill" id="energy-fill"></div></div>
+                <span id="energy-text">1000/1000</span>
+            </div>
 
-    <div class="leaderboard">
-        <h3>🏆 Топ игроков</h3>
-        <div id="leaderboardList">Загрузка...</div>
+            <button class="coin-btn" id="clickBtn">🪙</button>
+        </div>
+
+        <!-- ВКЛАДКА 2: МАГАЗИН -->
+        <div class="tab-page" id="page-shop">
+            <h2 style="margin-bottom: 20px; color: #ffd700;">Магазин улучшений</h2>
+            <div class="card-list">
+                <div class="card">
+                    <div class="card-info">
+                        <div class="card-icon">👆</div>
+                        <div class="card-text"><h4>Мульти-тап</h4><p>+1 монета за клик</p></div>
+                    </div>
+                    <button class="btn-buy" id="buy-tap">2000 🪙</button>
+                </div>
+                <div class="card">
+                    <div class="card-info">
+                        <div class="card-icon">⚡</div>
+                        <div class="card-text"><h4>Лимит энергии</h4><p>+500 к максимуму</p></div>
+                    </div>
+                    <button class="btn-buy" id="buy-energy">3000 🪙</button>
+                </div>
+                <div class="card">
+                    <div class="card-info">
+                        <div class="card-icon">📈</div>
+                        <div class="card-text"><h4>Пассивный доход</h4><p>+10 монет в час</p></div>
+                    </div>
+                    <button class="btn-buy" id="buy-income">1000 🪙</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА 3: ЗАДАНИЯ -->
+        <div class="tab-page" id="page-tasks">
+            <h2 style="margin-bottom: 20px; color: #ffd700;">Задания</h2>
+            <div class="card-list">
+                <div class="card">
+                    <div class="card-info">
+                        <div class="card-icon">🎁</div>
+                        <div class="card-text"><h4>Ежедневный бонус</h4><p>Раз в 24 часа</p></div>
+                    </div>
+                    <button class="btn-task" id="task-bonus">Забрать</button>
+                </div>
+                <div class="card">
+                    <div class="card-info">
+                        <div class="card-icon">📢</div>
+                        <div class="card-text"><h4>Подписка на канал</h4><p>+1000 монет</p></div>
+                    </div>
+                    <button class="btn-task" id="task-channel">Выполнить</button>
+                </div>
+                <div class="card">
+                    <div class="card-info">
+                        <div class="card-icon">👥</div>
+                        <div class="card-text"><h4>Пригласи друга</h4><p>+5000 монет</p></div>
+                    </div>
+                    <button class="btn-task" id="task-friend">Выполнить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА 4: ТОП -->
+        <div class="tab-page" id="page-top">
+            <h2 style="margin-bottom: 20px; color: #ffd700;">🏆 Топ игроков</h2>
+            <div class="card-list" id="leaderboardList">
+                <!-- Сюда вставляются игроки -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+    <div class="nav-bar">
+        <button class="nav-btn active" onclick="switchTab('clicker')"><i>🪙</i>Кликер</button>
+        <button class="nav-btn" onclick="switchTab('shop')"><i>🛒</i>Магазин</button>
+        <button class="nav-btn" onclick="switchTab('tasks')"><i>📋</i>Задания</button>
+        <button class="nav-btn" onclick="switchTab('top')"><i>🏆</i>Топ</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.ready();
+
+        // Пытаемся получить имя из Telegram
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            document.getElementById('username').innerText = tg.initDataUnsafe.user.first_name;
+            document.getElementById('avatar').innerText = tg.initDataUnsafe.user.first_name[0];
+        }
 
         const URL = 'https://zyarmtfnzupyzqpklajg.supabase.co/functions/v1/jaycoin-api';
         
@@ -71,6 +179,11 @@
         let isSyncing = false;
         let lastRenderedScore = -1; 
         let animationFrameId = null;
+
+        let currentEnergy = 1000;
+        let currentMaxEnergy = 1000;
+        let currentTapPower = 1;
+        let currentTasks = {};
 
         const MAX_CPS = 20; 
         let clickTimestamps = []; 
@@ -86,21 +199,38 @@
                 if (!res.ok) throw new Error(data.error);
                 return data;
             } catch (e) {
-                console.error(e);
+                // Показываем ошибку через всплывающее окно Telegram
+                if (tg.showAlert) tg.showAlert(e.message); else alert(e.message);
                 return null;
             }
+        }
+
+        // Переключение вкладок
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-page').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`page-${tabId}`).classList.add('active');
+            event.currentTarget.classList.add('active');
         }
 
         function renderScore() {
             const currentTotal = serverScore + pendingClicks + inFlightClicks;
             if (currentTotal !== lastRenderedScore) {
                 document.getElementById('score').innerText = currentTotal;
+                document.getElementById('header-balance').innerText = currentTotal;
                 lastRenderedScore = currentTotal;
             }
             animationFrameId = requestAnimationFrame(renderScore);
         }
 
         renderScore();
+
+        function updateEnergyUI() {
+            document.getElementById('energy-text').innerText = `${currentEnergy}/${currentMaxEnergy}`;
+            const percent = (currentEnergy / currentMaxEnergy) * 100;
+            document.getElementById('energy-fill').style.width = `${percent}%`;
+        }
 
         async function syncClicks() {
             if (pendingClicks === 0 || isSyncing) return;
@@ -115,6 +245,8 @@
             if (data) {
                 serverScore = data.balance; 
                 inFlightClicks = 0; 
+                currentEnergy = data.energy;
+                updateEnergyUI();
             } else {
                 pendingClicks += clicksToSend; 
                 inFlightClicks = 0;
@@ -130,25 +262,46 @@
                 pendingClicks = 0;
                 inFlightClicks = 0;
                 
-                document.getElementById('income').innerText = `Доход: ${data.incomePerHour} / час`;
-                document.getElementById('status').innerText = "✅ " + data.message;
-                document.getElementById('status').style.color = "#4CAF50";
+                currentEnergy = data.energy;
+                currentMaxEnergy = data.maxEnergy;
+                currentTapPower = data.tapPower;
+                currentTasks = data.tasksCompleted || {};
+
+                document.getElementById('income').innerText = `+${data.incomePerHour} / час`;
+                updateEnergyUI();
+                updateTasksUI();
                 
+                // Отрисовка топа
                 const list = document.getElementById('leaderboardList');
                 list.innerHTML = data.leaderboard.map((p, i) => 
-                    `<div class="leaderboard-item"><span>${i+1}. ${p.username || 'Игрок'}</span> <span>${p.balance}</span></div>`
+                    `<div class="leaderboard-item">
+                        <span>${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1 + '.'} ${p.username || 'Игрок'}</span> 
+                        <span>${p.balance} 🪙</span>
+                    </div>`
                 ).join('');
             }
         }
 
+        function updateTasksUI() {
+            if (currentTasks['channel']) document.getElementById('task-channel').disabled = true;
+            if (currentTasks['friend']) document.getElementById('task-friend').disabled = true;
+        }
+
+        // КЛИК
         document.getElementById('clickBtn').addEventListener('click', () => {
             const now = Date.now();
             clickTimestamps = clickTimestamps.filter(time => now - time < 1000);
             
             if (clickTimestamps.length >= MAX_CPS) return; 
+            if (currentEnergy < currentTapPower) {
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                return; // Нет энергии
+            }
             
             clickTimestamps.push(now);
             pendingClicks++; 
+            currentEnergy -= currentTapPower;
+            updateEnergyUI();
             
             if (tg.HapticFeedback) {
                 try { tg.HapticFeedback.impactOccurred('light'); } catch(e) {}
@@ -157,34 +310,60 @@
 
         setInterval(() => {
             if (pendingClicks > 0) syncClicks();
+            // Простая локальная регенерация энергии для визуала
+            if (currentEnergy < currentMaxEnergy) {
+                currentEnergy = Math.min(currentEnergy + 1, currentMaxEnergy);
+                updateEnergyUI();
+            }
         }, 1000);
 
-        window.addEventListener('beforeunload', () => {
-            if (pendingClicks > 0) {
-                const payload = JSON.stringify({ initData: tg.initData, addScore: pendingClicks });
-                navigator.sendBeacon(URL, payload); 
-            }
-        });
-
-        document.getElementById('upgradeBtn').addEventListener('click', async () => {
-            const data = await apiCall({ action: 'upgrade_income' });
+        // МАГАЗИН
+        async function buyUpgrade(type) {
+            const data = await apiCall({ action: type });
             if (data) {
                 serverScore = data.balance;
-                pendingClicks = 0; 
-                inFlightClicks = 0;
-                document.getElementById('income').innerText = `Доход: ${data.incomePerHour} / час`;
-                document.getElementById('status').innerText = "✅ Доход улучшен!";
+                currentEnergy = data.energy;
+                currentMaxEnergy = data.maxEnergy;
+                currentTapPower = data.tapPower;
+                document.getElementById('income').innerText = `+${data.incomePerHour} / час`;
+                updateEnergyUI();
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }
-        });
+        }
 
-        document.getElementById('bonusBtn').addEventListener('click', async () => {
+        document.getElementById('buy-tap').addEventListener('click', () => buyUpgrade('upgrade_tap'));
+        document.getElementById('buy-energy').addEventListener('click', () => buyUpgrade('upgrade_energy'));
+        document.getElementById('buy-income').addEventListener('click', () => buyUpgrade('upgrade_income'));
+
+        // ЗАДАНИЯ
+        document.getElementById('task-bonus').addEventListener('click', async () => {
             const data = await apiCall({ action: 'daily_bonus' });
             if (data) {
                 serverScore = data.balance;
-                pendingClicks = 0; 
-                inFlightClicks = 0;
-                document.getElementById('status').innerText = "✅ Бонус получен! (+500)";
-                document.getElementById('status').style.color = "#4CAF50";
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                if (tg.showAlert) tg.showAlert('Бонус получен! +500 монет');
+            }
+        });
+
+        document.getElementById('task-channel').addEventListener('click', async (e) => {
+            const data = await apiCall({ action: 'complete_task', taskId: 'channel' });
+            if (data) {
+                serverScore = data.balance;
+                currentTasks = data.tasksCompleted;
+                updateTasksUI();
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                if (tg.showAlert) tg.showAlert('Задание выполнено! +1000 монет');
+            }
+        });
+
+        document.getElementById('task-friend').addEventListener('click', async (e) => {
+            const data = await apiCall({ action: 'complete_task', taskId: 'friend' });
+            if (data) {
+                serverScore = data.balance;
+                currentTasks = data.tasksCompleted;
+                updateTasksUI();
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                if (tg.showAlert) tg.showAlert('Задание выполнено! +1000 монет');
             }
         });
 
