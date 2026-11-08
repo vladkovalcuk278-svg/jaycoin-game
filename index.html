@@ -307,4 +307,73 @@
         });
 
         setInterval(() => {
-            if (pending
+            if (pendingClicks > 0 && !isSyncing) syncClicks();
+            if (currentEnergy < currentMaxEnergy) {
+                currentEnergy = Math.min(currentEnergy + currentRegen, currentMaxEnergy);
+                updateEnergyUI();
+            }
+        }, 1000);
+
+        async function syncClicks() {
+            if (pendingClicks === 0 || isSyncing) return;
+            isSyncing = true;
+            const clicksToSend = pendingClicks;
+            pendingClicks = 0; inFlightClicks = clicksToSend; 
+            
+            const data = await apiCall({ addScore: clicksToSend });
+            
+            if (data) {
+                serverScore = data.balance; inFlightClicks = 0; 
+                currentEnergy = data.energy; updateEnergyUI();
+            } else {
+                pendingClicks += clicksToSend; inFlightClicks = 0;
+            }
+            isSyncing = false;
+        }
+
+        async function buy(act) {
+            if (pendingClicks > 0) {
+                isSyncing = true;
+                const clicksToSend = pendingClicks;
+                pendingClicks = 0;
+                const syncData = await apiCall({ addScore: clicksToSend });
+                if (syncData) serverScore = syncData.balance;
+                else pendingClicks += clicksToSend;
+                isSyncing = false;
+            }
+
+            const data = await apiCall({ action: act });
+            if (data) {
+                serverScore = data.balance; currentEnergy = data.energy; currentMaxEnergy = data.maxEnergy;
+                currentRegen = data.energyRegen; currentTap = data.tapPower;
+                document.getElementById('income').innerText = `+${data.incomePerHour} / час`;
+                updateEnergyUI(); updateShopPrices(data); renderScore();
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }
+        }
+
+        document.getElementById('buy-income').onclick = () => buy('upgrade_income');
+        document.getElementById('buy-tap').onclick = () => buy('upgrade_tap');
+        document.getElementById('buy-energy').onclick = () => buy('upgrade_energy');
+        document.getElementById('buy-regen').onclick = () => buy('upgrade_regen');
+        document.getElementById('buy-auto').onclick = () => buy('buy_autoclicker');
+
+        async function doTask(type, id) {
+            const data = await apiCall({ action: type, taskId: id, achId: id });
+            if (data) {
+                serverScore = data.balance;
+                tasks = data.tasksCompleted; achs = data.achievementsCompleted;
+                updateTasksUI();
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                if (tg.showAlert) tg.showAlert('Успешно получено!');
+            }
+        }
+
+        document.getElementById('task-channel').onclick = () => doTask('complete_task', 'channel');
+        document.getElementById('ach-rich').onclick = () => doTask('claim_achievement', 'rich_100k');
+        document.getElementById('ach-energy').onclick = () => doTask('claim_achievement', 'energy_master');
+
+        loadGame();
+    </script>
+</body>
+</html>
