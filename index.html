@@ -7,14 +7,12 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { background-color: #0e1621; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { background-color: #0e1621; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Хедер */
         .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #17212b; box-shadow: 0 2px 10px rgba(0,0,0,0.3); z-index: 10; }
         .user-info { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 16px; }
         .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: #2b5278; display: flex; justify-content: center; align-items: center; font-size: 18px; }
         
-        /* Основной контент */
         .content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 90px; display: flex; flex-direction: column; align-items: center; }
         .tab-page { display: none; width: 100%; flex-direction: column; align-items: center; }
         .tab-page.active { display: flex; animation: fadeIn 0.2s ease-out; }
@@ -25,16 +23,16 @@
         .score { font-size: 56px; font-weight: 800; color: #ffd700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }
         .income { font-size: 14px; color: #8899a6; margin-top: 5px; }
         
-        /* Энергия */
         .energy-container { width: 80%; max-width: 300px; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: bold; }
         .energy-bar { flex: 1; height: 8px; background: #232e3c; border-radius: 4px; overflow: hidden; }
         .energy-fill { height: 100%; background: #ffd700; width: 100%; transition: width 0.3s; }
         
-        /* Монета */
         .coin-btn { width: 220px; height: 220px; border-radius: 50%; border: 8px solid #d4af37; background: radial-gradient(circle, #ffd700 0%, #b8860b 100%); font-size: 100px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 15px 35px rgba(0,0,0,0.5); transition: transform 0.05s; user-select: none; }
         .coin-btn:active { transform: scale(0.92); }
+        .auto-btn { margin-top: 20px; padding: 10px 20px; border-radius: 10px; background: #2b5278; color: white; font-weight: bold; border: none; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .auto-btn.active { background: #4CAF50; }
 
-        /* Карточки магазина и заданий */
+        /* Карточки */
         .card-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
         .card { background: #17212b; border-radius: 12px; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 1px solid #232e3c; }
         .card-info { display: flex; align-items: center; gap: 15px; text-align: left; }
@@ -45,20 +43,17 @@
         .btn-buy:active, .btn-task:active { opacity: 0.8; }
         .btn-buy:disabled, .btn-task:disabled { background: #232e3c; color: #5a6b7c; }
 
-        /* Навигация снизу */
         .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: #17212b; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.3); z-index: 10; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-btn { background: none; border: none; color: #5a6b7c; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: color 0.2s; }
-        .nav-btn i { font-size: 20px; font-style: normal; }
+        .nav-btn { background: none; border: none; color: #5a6b7c; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: color 0.2s; flex: 1; }
+        .nav-btn i { font-size: 22px; font-style: normal; }
         .nav-btn.active { color: #ffd700; }
 
-        /* Топ игроков */
         .leaderboard-item { display: flex; justify-content: space-between; width: 100%; padding: 10px 15px; background: #17212b; border-radius: 8px; margin-bottom: 8px; font-weight: bold; }
         .leaderboard-item:first-child { background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); color: #ffd700; }
     </style>
 </head>
 <body>
 
-    <!-- ХЕДЕР -->
     <div class="header">
         <div class="user-info">
             <div class="user-avatar" id="avatar">👤</div>
@@ -67,10 +62,9 @@
         <div style="font-weight: bold; color: #ffd700;" id="header-balance">0</div>
     </div>
 
-    <!-- КОНТЕНТ -->
     <div class="content">
         
-        <!-- ВКЛАДКА 1: КЛИКЕР -->
+        <!-- КЛИКЕР -->
         <div class="tab-page active" id="page-clicker">
             <div class="score-container">
                 <div class="score" id="score">0</div>
@@ -84,88 +78,91 @@
             </div>
 
             <button class="coin-btn" id="clickBtn">🪙</button>
+            
+            <button class="auto-btn" id="autoBtn" style="display: none;">🤖 Включить Автокликер</button>
         </div>
 
-        <!-- ВКЛАДКА 2: МАГАЗИН -->
+        <!-- МАГАЗИН -->
         <div class="tab-page" id="page-shop">
-            <h2 style="margin-bottom: 20px; color: #ffd700;">Магазин улучшений</h2>
+            <h2 style="margin-bottom: 20px; color: #ffd700;">Магазин</h2>
             <div class="card-list">
                 <div class="card">
-                    <div class="card-info">
-                        <div class="card-icon">👆</div>
-                        <div class="card-text"><h4>Мульти-тап</h4><p>+1 монета за клик</p></div>
-                    </div>
-                    <button class="btn-buy" id="buy-tap">2000 🪙</button>
+                    <div class="card-info"><div class="card-icon">📈</div><div class="card-text"><h4>Бизнес</h4><p>+50 монет в час</p></div></div>
+                    <button class="btn-buy" id="buy-income">Купить</button>
                 </div>
                 <div class="card">
-                    <div class="card-info">
-                        <div class="card-icon">⚡</div>
-                        <div class="card-text"><h4>Лимит энергии</h4><p>+500 к максимуму</p></div>
-                    </div>
-                    <button class="btn-buy" id="buy-energy">3000 🪙</button>
+                    <div class="card-info"><div class="card-icon">👆</div><div class="card-text"><h4>Сила клика</h4><p>+1 монета за тап</p></div></div>
+                    <button class="btn-buy" id="buy-tap">Купить</button>
                 </div>
                 <div class="card">
-                    <div class="card-info">
-                        <div class="card-icon">📈</div>
-                        <div class="card-text"><h4>Пассивный доход</h4><p>+10 монет в час</p></div>
-                    </div>
-                    <button class="btn-buy" id="buy-income">1000 🪙</button>
+                    <div class="card-info"><div class="card-icon">⚡</div><div class="card-text"><h4>Лимит энергии</h4><p>+500 к максимуму</p></div></div>
+                    <button class="btn-buy" id="buy-energy">Купить</button>
+                </div>
+                <div class="card">
+                    <div class="card-info"><div class="card-icon">🔄</div><div class="card-text"><h4>Скорость энергии</h4><p>+1 ед. в секунду</p></div></div>
+                    <button class="btn-buy" id="buy-regen">Купить</button>
+                </div>
+                <div class="card" style="border-color: #ffd700;">
+                    <div class="card-info"><div class="card-icon">🤖</div><div class="card-text"><h4>Автокликер</h4><p>Кликает сам (10к)</p></div></div>
+                    <button class="btn-buy" id="buy-auto">Купить</button>
                 </div>
             </div>
         </div>
 
-        <!-- ВКЛАДКА 3: ЗАДАНИЯ -->
+        <!-- ЗАДАНИЯ -->
         <div class="tab-page" id="page-tasks">
             <h2 style="margin-bottom: 20px; color: #ffd700;">Задания</h2>
             <div class="card-list">
                 <div class="card">
-                    <div class="card-info">
-                        <div class="card-icon">🎁</div>
-                        <div class="card-text"><h4>Ежедневный бонус</h4><p>Раз в 24 часа</p></div>
-                    </div>
-                    <button class="btn-task" id="task-bonus">Забрать</button>
-                </div>
-                <div class="card">
-                    <div class="card-info">
-                        <div class="card-icon">📢</div>
-                        <div class="card-text"><h4>Подписка на канал</h4><p>+1000 монет</p></div>
-                    </div>
+                    <div class="card-info"><div class="card-icon">📢</div><div class="card-text"><h4>Подписка на канал</h4><p>+5000 монет</p></div></div>
                     <button class="btn-task" id="task-channel">Выполнить</button>
                 </div>
                 <div class="card">
-                    <div class="card-info">
-                        <div class="card-icon">👥</div>
-                        <div class="card-text"><h4>Пригласи друга</h4><p>+5000 монет</p></div>
-                    </div>
+                    <div class="card-info"><div class="card-icon">👥</div><div class="card-text"><h4>Пригласи друга</h4><p>+5000 монет</p></div></div>
                     <button class="btn-task" id="task-friend">Выполнить</button>
+                </div>
+                <div class="card">
+                    <div class="card-info"><div class="card-icon">🐦</div><div class="card-text"><h4>Подпишись на Twitter</h4><p>+5000 монет</p></div></div>
+                    <button class="btn-task" id="task-twitter">Выполнить</button>
                 </div>
             </div>
         </div>
 
-        <!-- ВКЛАДКА 4: ТОП -->
-        <div class="tab-page" id="page-top">
-            <h2 style="margin-bottom: 20px; color: #ffd700;">🏆 Топ игроков</h2>
-            <div class="card-list" id="leaderboardList">
-                <!-- Сюда вставляются игроки -->
+        <!-- ДОСТИЖЕНИЯ -->
+        <div class="tab-page" id="page-ach">
+            <h2 style="margin-bottom: 20px; color: #ffd700;">Достижения</h2>
+            <div class="card-list">
+                <div class="card">
+                    <div class="card-info"><div class="card-icon">💰</div><div class="card-text"><h4>Богач</h4><p>Накопи 100,000 монет</p></div></div>
+                    <button class="btn-task" id="ach-rich">Забрать</button>
+                </div>
+                <div class="card">
+                    <div class="card-info"><div class="card-icon">⚡</div><div class="card-text"><h4>Энерджайзер</h4><p>Купи энергию 3 раза</p></div></div>
+                    <button class="btn-task" id="ach-energy">Забрать</button>
+                </div>
             </div>
+        </div>
+
+        <!-- ТОП -->
+        <div class="tab-page" id="page-top">
+            <h2 style="margin-bottom: 20px; color: #ffd700;">🏆 Топ</h2>
+            <div class="card-list" id="leaderboardList"></div>
         </div>
 
     </div>
 
-    <!-- НИЖНЯЯ НАВИГАЦИЯ -->
     <div class="nav-bar">
-        <button class="nav-btn active" onclick="switchTab('clicker')"><i>🪙</i>Кликер</button>
-        <button class="nav-btn" onclick="switchTab('shop')"><i>🛒</i>Магазин</button>
-        <button class="nav-btn" onclick="switchTab('tasks')"><i>📋</i>Задания</button>
-        <button class="nav-btn" onclick="switchTab('top')"><i>🏆</i>Топ</button>
+        <button class="nav-btn active" onclick="switchTab('clicker', this)"><i>🪙</i>Кликер</button>
+        <button class="nav-btn" onclick="switchTab('shop', this)"><i>🛒</i>Магазин</button>
+        <button class="nav-btn" onclick="switchTab('tasks', this)"><i>📋</i>Задания</button>
+        <button class="nav-btn" onclick="switchTab('ach', this)"><i>🏅</i>Награды</button>
+        <button class="nav-btn" onclick="switchTab('top', this)"><i>🏆</i>Топ</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.ready();
+        tg.expand(); tg.ready();
 
-        // Пытаемся получить имя из Telegram
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             document.getElementById('username').innerText = tg.initDataUnsafe.user.first_name;
             document.getElementById('avatar').innerText = tg.initDataUnsafe.user.first_name[0];
@@ -173,20 +170,10 @@
 
         const URL = 'https://zyarmtfnzupyzqpklajg.supabase.co/functions/v1/jaycoin-api';
         
-        let serverScore = 0;       
-        let pendingClicks = 0;     
-        let inFlightClicks = 0;    
-        let isSyncing = false;
-        let lastRenderedScore = -1; 
-        let animationFrameId = null;
-
-        let currentEnergy = 1000;
-        let currentMaxEnergy = 1000;
-        let currentTapPower = 1;
-        let currentTasks = {};
-
-        const MAX_CPS = 20; 
-        let clickTimestamps = []; 
+        let serverScore = 0, pendingClicks = 0, inFlightClicks = 0, isSyncing = false;
+        let currentEnergy = 1000, currentMaxEnergy = 1000, currentRegen = 1, currentTap = 1;
+        let hasAutoClicker = false, autoClickerActive = false;
+        let tasks = {}, achs = {};
 
         async function apiCall(payload) {
             try {
@@ -199,173 +186,161 @@
                 if (!res.ok) throw new Error(data.error);
                 return data;
             } catch (e) {
-                // Показываем ошибку через всплывающее окно Telegram
                 if (tg.showAlert) tg.showAlert(e.message); else alert(e.message);
                 return null;
             }
         }
 
-        // Переключение вкладок
-        function switchTab(tabId) {
+        function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-page').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-            
             document.getElementById(`page-${tabId}`).classList.add('active');
-            event.currentTarget.classList.add('active');
+            btn.classList.add('active');
         }
 
         function renderScore() {
-            const currentTotal = serverScore + pendingClicks + inFlightClicks;
-            if (currentTotal !== lastRenderedScore) {
-                document.getElementById('score').innerText = currentTotal;
-                document.getElementById('header-balance').innerText = currentTotal;
-                lastRenderedScore = currentTotal;
-            }
-            animationFrameId = requestAnimationFrame(renderScore);
+            const total = serverScore + pendingClicks + inFlightClicks;
+            document.getElementById('score').innerText = total;
+            document.getElementById('header-balance').innerText = total;
+            requestAnimationFrame(renderScore);
         }
-
         renderScore();
 
         function updateEnergyUI() {
-            document.getElementById('energy-text').innerText = `${currentEnergy}/${currentMaxEnergy}`;
-            const percent = (currentEnergy / currentMaxEnergy) * 100;
-            document.getElementById('energy-fill').style.width = `${percent}%`;
+            document.getElementById('energy-text').innerText = `${Math.floor(currentEnergy)}/${currentMaxEnergy}`;
+            document.getElementById('energy-fill').style.width = `${(currentEnergy / currentMaxEnergy) * 100}%`;
         }
 
-        async function syncClicks() {
-            if (pendingClicks === 0 || isSyncing) return;
-            
-            isSyncing = true;
-            const clicksToSend = pendingClicks;
-            pendingClicks = 0; 
-            inFlightClicks = clicksToSend; 
-            
-            const data = await apiCall({ addScore: clicksToSend });
-            
-            if (data) {
-                serverScore = data.balance; 
-                inFlightClicks = 0; 
-                currentEnergy = data.energy;
-                updateEnergyUI();
-            } else {
-                pendingClicks += clicksToSend; 
-                inFlightClicks = 0;
-            }
-            
-            isSyncing = false;
+        function updateShopPrices(data) {
+            // Просто обновляем текст на кнопках (цены на сервере, тут для красоты)
+            document.getElementById('buy-income').innerText = (500 + data.incomePerHour * 2) + ' 🪙';
+            document.getElementById('buy-tap').innerText = (1000 + data.tapPower * 500) + ' 🪙';
+            document.getElementById('buy-energy').innerText = (2000 + data.maxEnergy * 2) + ' 🪙';
+            document.getElementById('buy-regen').innerText = (5000 * data.energyRegen) + ' 🪙';
         }
 
         async function loadGame() {
             const data = await apiCall({});
             if (data) {
                 serverScore = data.balance;
-                pendingClicks = 0;
-                inFlightClicks = 0;
-                
-                currentEnergy = data.energy;
-                currentMaxEnergy = data.maxEnergy;
-                currentTapPower = data.tapPower;
-                currentTasks = data.tasksCompleted || {};
+                pendingClicks = 0; inFlightClicks = 0;
+                currentEnergy = data.energy; currentMaxEnergy = data.maxEnergy; currentRegen = data.energyRegen;
+                currentTap = data.tapPower;
+                tasks = data.tasksCompleted || {}; achs = data.achievementsCompleted || {};
 
                 document.getElementById('income').innerText = `+${data.incomePerHour} / час`;
-                updateEnergyUI();
-                updateTasksUI();
+                updateEnergyUI(); updateShopPrices(data); updateTasksUI();
                 
-                // Отрисовка топа
+                if (data.autoClicker === 1) {
+                    hasAutoClicker = true;
+                    document.getElementById('autoBtn').style.display = 'flex';
+                    document.getElementById('buy-auto').disabled = true;
+                    document.getElementById('buy-auto').innerText = 'Куплено';
+                }
+
                 const list = document.getElementById('leaderboardList');
                 list.innerHTML = data.leaderboard.map((p, i) => 
-                    `<div class="leaderboard-item">
-                        <span>${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1 + '.'} ${p.username || 'Игрок'}</span> 
-                        <span>${p.balance} 🪙</span>
-                    </div>`
+                    `<div class="leaderboard-item"><span>${i+1}. ${p.username || 'Игрок'}</span><span>${p.balance} 🪙</span></div>`
                 ).join('');
             }
         }
 
         function updateTasksUI() {
-            if (currentTasks['channel']) document.getElementById('task-channel').disabled = true;
-            if (currentTasks['friend']) document.getElementById('task-friend').disabled = true;
+            if (tasks['channel']) document.getElementById('task-channel').disabled = true;
+            if (tasks['friend']) document.getElementById('task-friend').disabled = true;
+            if (tasks['twitter']) document.getElementById('task-twitter').disabled = true;
+            if (achs['rich_100k']) document.getElementById('ach-rich').disabled = true;
+            if (achs['energy_master']) document.getElementById('ach-energy').disabled = true;
         }
 
         // КЛИК
         document.getElementById('clickBtn').addEventListener('click', () => {
-            const now = Date.now();
-            clickTimestamps = clickTimestamps.filter(time => now - time < 1000);
-            
-            if (clickTimestamps.length >= MAX_CPS) return; 
-            if (currentEnergy < currentTapPower) {
+            if (currentEnergy < currentTap) {
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                return; // Нет энергии
+                return;
             }
-            
-            clickTimestamps.push(now);
             pendingClicks++; 
-            currentEnergy -= currentTapPower;
+            currentEnergy -= currentTap;
             updateEnergyUI();
-            
-            if (tg.HapticFeedback) {
-                try { tg.HapticFeedback.impactOccurred('light'); } catch(e) {}
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        });
+
+        // АВТОКЛИКЕР (Логика: раз в секунду)
+        setInterval(() => {
+            if (autoClickerActive && currentEnergy >= currentTap) {
+                pendingClicks++;
+                currentEnergy -= currentTap;
+                updateEnergyUI();
             }
+        }, 800); // 800мс = ~1.2 клика в секунду
+
+        document.getElementById('autoBtn').addEventListener('click', function() {
+            autoClickerActive = !autoClickerActive;
+            this.classList.toggle('active');
+            this.innerText = autoClickerActive ? '⏸️ Остановить Автокликер' : '▶️ Включить Автокликер';
         });
 
         setInterval(() => {
             if (pendingClicks > 0) syncClicks();
-            // Простая локальная регенерация энергии для визуала
             if (currentEnergy < currentMaxEnergy) {
-                currentEnergy = Math.min(currentEnergy + 1, currentMaxEnergy);
+                currentEnergy = Math.min(currentEnergy + currentRegen, currentMaxEnergy);
                 updateEnergyUI();
             }
         }, 1000);
 
-        // МАГАЗИН
-        async function buyUpgrade(type) {
-            const data = await apiCall({ action: type });
+        async function syncClicks() {
+            if (pendingClicks === 0 || isSyncing) return;
+            isSyncing = true;
+            const clicksToSend = pendingClicks;
+            pendingClicks = 0; inFlightClicks = clicksToSend; 
+            
+            const data = await apiCall({ addScore: clicksToSend });
+            
             if (data) {
-                serverScore = data.balance;
-                currentEnergy = data.energy;
-                currentMaxEnergy = data.maxEnergy;
-                currentTapPower = data.tapPower;
+                serverScore = data.balance; inFlightClicks = 0; 
+                // Синхронизируем энергию с сервером (чтобы не было расхождений)
+                currentEnergy = data.energy; updateEnergyUI();
+            } else {
+                pendingClicks += clicksToSend; inFlightClicks = 0;
+            }
+            isSyncing = false;
+        }
+
+        // ПОКУПКИ
+        async function buy(act) {
+            const data = await apiCall({ action: act });
+            if (data) {
+                serverScore = data.balance; currentEnergy = data.energy; currentMaxEnergy = data.maxEnergy;
+                currentRegen = data.energyRegen; currentTap = data.tapPower;
                 document.getElementById('income').innerText = `+${data.incomePerHour} / час`;
-                updateEnergyUI();
+                updateEnergyUI(); updateShopPrices(data);
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }
         }
 
-        document.getElementById('buy-tap').addEventListener('click', () => buyUpgrade('upgrade_tap'));
-        document.getElementById('buy-energy').addEventListener('click', () => buyUpgrade('upgrade_energy'));
-        document.getElementById('buy-income').addEventListener('click', () => buyUpgrade('upgrade_income'));
+        document.getElementById('buy-income').onclick = () => buy('upgrade_income');
+        document.getElementById('buy-tap').onclick = () => buy('upgrade_tap');
+        document.getElementById('buy-energy').onclick = () => buy('upgrade_energy');
+        document.getElementById('buy-regen').onclick = () => buy('upgrade_regen');
+        document.getElementById('buy-auto').onclick = () => buy('buy_autoclicker');
 
-        // ЗАДАНИЯ
-        document.getElementById('task-bonus').addEventListener('click', async () => {
-            const data = await apiCall({ action: 'daily_bonus' });
+        // ЗАДАНИЯ И ДОСТИЖЕНИЯ
+        async function doTask(type, id) {
+            const data = await apiCall({ action: type, taskId: id, achId: id });
             if (data) {
                 serverScore = data.balance;
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                if (tg.showAlert) tg.showAlert('Бонус получен! +500 монет');
-            }
-        });
-
-        document.getElementById('task-channel').addEventListener('click', async (e) => {
-            const data = await apiCall({ action: 'complete_task', taskId: 'channel' });
-            if (data) {
-                serverScore = data.balance;
-                currentTasks = data.tasksCompleted;
+                tasks = data.tasksCompleted; achs = data.achievementsCompleted;
                 updateTasksUI();
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                if (tg.showAlert) tg.showAlert('Задание выполнено! +1000 монет');
+                if (tg.showAlert) tg.showAlert('Получено!');
             }
-        });
+        }
 
-        document.getElementById('task-friend').addEventListener('click', async (e) => {
-            const data = await apiCall({ action: 'complete_task', taskId: 'friend' });
-            if (data) {
-                serverScore = data.balance;
-                currentTasks = data.tasksCompleted;
-                updateTasksUI();
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                if (tg.showAlert) tg.showAlert('Задание выполнено! +1000 монет');
-            }
-        });
+        document.getElementById('task-channel').onclick = () => doTask('complete_task', 'channel');
+        document.getElementById('task-friend').onclick = () => doTask('complete_task', 'friend');
+        document.getElementById('task-twitter').onclick = () => doTask('complete_task', 'twitter');
+        document.getElementById('ach-rich').onclick = () => doTask('claim_achievement', 'rich_100k');
+        document.getElementById('ach-energy').onclick = () => doTask('claim_achievement', 'energy_master');
 
         loadGame();
     </script>
